@@ -192,7 +192,7 @@ inline Response Session::deletePrepare() {
 
 inline Response Session::makeRequest(const std::string& contentType) {
     std::lock_guard<std::mutex> lock(mutex_request_);
-    
+
     struct curl_slist* headers = NULL;
     if (!contentType.empty()) {
         headers = curl_slist_append(headers, std::string{"Content-Type: " + contentType}.c_str());
@@ -209,7 +209,7 @@ inline Response Session::makeRequest(const std::string& contentType) {
     }
     curl_easy_setopt(curl_, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl_, CURLOPT_URL, url_.c_str());
-    
+
     std::string response_string;
     std::string header_string;
     curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, writeFunction);
@@ -218,9 +218,14 @@ inline Response Session::makeRequest(const std::string& contentType) {
 
     res_ = curl_easy_perform(curl_);
 
+    if (headers != NULL) {
+        curl_slist_free_all(headers);
+        headers = NULL;
+    }
+
     bool is_error = false;
     std::string error_msg{};
-    if(res_ != CURLE_OK) {
+    if (res_ != CURLE_OK) {
         is_error = true;
         error_msg = "OpenAI curl_easy_perform() failed: " + std::string{curl_easy_strerror(res_)};
         if (throw_exception_) {
